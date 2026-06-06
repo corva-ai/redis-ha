@@ -278,7 +278,9 @@ The following table lists the configurable parameters of the Redis chart and the
 | `haproxy.image.repository` | HAProxy Image Repository | string | `"public.ecr.aws/docker/library/haproxy"` |
 | `haproxy.image.tag` | HAProxy Image Tag | string | `"3.3.10-alpine"` |
 | `haproxy.imagePullSecrets` | Reference to one or more secrets to be used when pulling images ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ | list | `[]` |
+| `haproxy.init.image` | Override the init container image entirely. Takes precedence over useRedisImage. | object | `{}` |
 | `haproxy.init.resources` | Extra init resources | object | `{}` |
+| `haproxy.init.useRedisImage` | Use the Redis image (`.Values.image`) for the init container instead of the HAProxy image. Enable this when the HAProxy image is distroless (no shell). Set to false only if your HAProxy image includes sh. | bool | `false` |
 | `haproxy.labels` | Custom labels for the haproxy pod | object | `{}` |
 | `haproxy.lifecycle` | Container lifecycle hooks. Ref: https://kubernetes.io/docs/concepts/containers/container-lifecycle-hooks/ | object | `{}` |
 | `haproxy.metrics.enabled` | HAProxy enable prometheus metric scraping | bool | `false` |

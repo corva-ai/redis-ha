@@ -231,6 +231,15 @@ haproxy:
   init:
     # -- Extra init resources
     resources: {}
+    # -- Use the Redis image (`.Values.image`) for the init container instead of the HAProxy image.
+    # Enable this when the HAProxy image is distroless (no shell). Set to false only if your HAProxy image includes sh.
+    useRedisImage: false
+    # -- Override the init container image entirely. Takes precedence over useRedisImage.
+    image: {}
+    # image:
+    #   repository: ""
+    #   tag: ""
+    #   pullPolicy: IfNotPresent
   timeout:
     # -- haproxy.cfg `timeout connect` setting
     connect: 4s
