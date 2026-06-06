@@ -8,6 +8,13 @@ Releases prior to the introduction of this changelog (chart versions ≤ `4.35.1
 
 ## Historical breaking changes (inherited from upstream)
 
+## [5.0.1](https://github.com/corva-ai/redis-ha/compare/5.0.0...5.0.1) (2026-06-06)
+
+
+### Bug Fixes
+
+* haproxy init image if missing sh ([#2](https://github.com/corva-ai/redis-ha/issues/2)) ([5ec8cc6](https://github.com/corva-ai/redis-ha/commit/5ec8cc6d99c4c4093a3b891444d0f33ea998910c))
+
 ## [5.0.0](https://github.com/corva-ai/redis-ha/compare/4.35.10...5.0.0) (2026-05-19)
 
 
