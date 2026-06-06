@@ -3,6 +3,30 @@ entries:
   redis-ha:
   - apiVersion: v2
     appVersion: 8.6.3
+    created: "2026-06-06T23:44:34.600147053Z"
+    description: This Helm chart provides a highly available Redis implementation
+      with a master/slave configuration and uses Sentinel sidecars for failover management
+    digest: 28433a02c4982fe487da4cca385a89297ee323741e71edbb8f7c71c19922ad8b
+    home: https://redis.io/
+    icon: https://img.icons8.com/external-tal-revivo-shadow-tal-revivo/24/external-redis-an-in-memory-data-structure-project-implementing-a-distributed-logo-shadow-tal-revivo.png
+    keywords:
+    - redis
+    - keyvalue
+    - database
+    kubeVersion: '>= 1.25.0-0'
+    maintainers:
+    - email: volodymyr.kryzhanivskyi@corva.ai
+      name: Volodymyr Kryzhanivskyi
+    name: redis-ha
+    sources:
+    - https://redis.io/download
+    - https://github.com/corva-ai/redis-ha
+    - https://github.com/oliver006/redis_exporter
+    urls:
+    - https://github.com/corva-ai/redis-ha/releases/download/5.0.1/redis-ha-5.0.1.tgz
+    version: 5.0.1
+  - apiVersion: v2
+    appVersion: 8.6.3
     created: "2026-05-19T15:24:45.33561211Z"
     description: This Helm chart provides a highly available Redis implementation
       with a master/slave configuration and uses Sentinel sidecars for failover management
@@ -25,4 +49,4 @@ entries:
     urls:
     - https://github.com/corva-ai/redis-ha/releases/download/5.0.0/redis-ha-5.0.0.tgz
     version: 5.0.0
-generated: "2026-05-19T15:24:45.335636186Z"
+generated: "2026-06-06T23:44:34.60015842Z"
