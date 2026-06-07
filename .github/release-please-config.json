@@ -10,6 +10,7 @@
       "package-name": "redis-ha",
       "changelog-path": "CHANGELOG.md",
       "skip-github-release": true,
+      "skip-github-tag": true,
       "extra-files": []
     }
   }
