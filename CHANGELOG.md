@@ -8,6 +8,13 @@ Releases prior to the introduction of this changelog (chart versions ≤ `4.35.1
 
 ## Historical breaking changes (inherited from upstream)
 
+## [5.1.0](https://github.com/corva-ai/redis-ha/compare/5.0.1...5.1.0) (2026-06-07)
+
+
+### Features
+
+* alpine image support by config-init ([#4](https://github.com/corva-ai/redis-ha/issues/4)) ([40fa206](https://github.com/corva-ai/redis-ha/commit/40fa20645c6707d015647e5032aff0d64cb7ffa3))
+
 ## [5.0.1](https://github.com/corva-ai/redis-ha/compare/5.0.0...5.0.1) (2026-06-06)
 
 
