@@ -89,6 +89,13 @@
 {{- end }}
 
 {{- define "lib.sh" }}
+    # getent shim for Alpine/musl images that lack glibc; nslookup is provided by busybox.
+    command -v getent >/dev/null 2>&1 || getent() {
+        case "$1" in
+            hosts) nslookup "${2}" 2>/dev/null | awk '/^Address [0-9]+:/ && NF>=4 { print $3, $4; exit }' ;;
+        esac
+    }
+
     sentinel_get_master() {
     set +e
         if [ "$SENTINEL_PORT" -eq 0 ]; then
@@ -701,6 +708,12 @@
 {{- define "config-haproxy_init.sh" }}
     HAPROXY_CONF=/data/haproxy.cfg
     cp /readonly/haproxy.cfg "$HAPROXY_CONF"
+    # getent shim for Alpine/musl images that lack glibc; nslookup is provided by busybox.
+    command -v getent >/dev/null 2>&1 || getent() {
+        case "$1" in
+            hosts) nslookup "${2}" 2>/dev/null | awk '/^Address [0-9]+:/ && NF>=4 { print $3, $4; exit }' ;;
+        esac
+    }
     {{- $fullName := include "redis-ha.fullname" . }}
     {{- $replicas := int (toString .Values.replicas) }}
     {{- $resolveHostnames := .Values.sentinel.resolveHostnames }}
