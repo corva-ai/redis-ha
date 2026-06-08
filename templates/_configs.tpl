@@ -89,13 +89,6 @@
 {{- end }}
 
 {{- define "lib.sh" }}
-    # getent shim for Alpine/musl images that lack glibc; nslookup is provided by busybox.
-    command -v getent >/dev/null 2>&1 || getent() {
-        case "$1" in
-            hosts) nslookup "${2}" 2>/dev/null | awk '/^Address [0-9]+:/ && NF>=4 { print $3, $4; exit }' ;;
-        esac
-    }
-
     sentinel_get_master() {
     set +e
         if [ "$SENTINEL_PORT" -eq 0 ]; then
@@ -331,7 +324,11 @@
         if [ "$RESOLVE_HOSTNAMES" = true ]; then
             echo "${service}.${NAMESPACE}.svc"
         else
-            host=$(getent hosts "${service}")
+            host=$(getent hosts "${service}" 2>/dev/null)
+            if [ -z "${host}" ]; then
+                host=$(nslookup "${service}.${NAMESPACE}.svc.cluster.local" 2>/dev/null | awk -F'[: ]+' 'found && /^Address/{ip=($2~/^[0-9]+$/)?$3:$2; print ip; exit} /^Name/{found=1}')
+                [ -n "${host}" ] && host="${host} ${service}"
+            fi
             echo "${host}"
         fi
     }
@@ -708,12 +705,6 @@
 {{- define "config-haproxy_init.sh" }}
     HAPROXY_CONF=/data/haproxy.cfg
     cp /readonly/haproxy.cfg "$HAPROXY_CONF"
-    # getent shim for Alpine/musl images that lack glibc; nslookup is provided by busybox.
-    command -v getent >/dev/null 2>&1 || getent() {
-        case "$1" in
-            hosts) nslookup "${2}" 2>/dev/null | awk '/^Address [0-9]+:/ && NF>=4 { print $3, $4; exit }' ;;
-        esac
-    }
     {{- $fullName := include "redis-ha.fullname" . }}
     {{- $replicas := int (toString .Values.replicas) }}
     {{- $resolveHostnames := .Values.sentinel.resolveHostnames }}
@@ -721,11 +712,14 @@
     {{- if not $resolveHostnames }}
     {{- range $i := until $replicas }}
     # Wait for each announce-service DNS record to exist before HAProxy resolves them.
+    # getent respects /etc/resolv.conf search domains; BusyBox nslookup does not, so pass the
+    # FQDN explicitly as fallback to avoid NXDOMAIN on short names in hardened images.
+    _resolve() { getent hosts "$1" >/dev/null 2>&1 || nslookup "$1.{{ $namespace }}.svc.cluster.local" >/dev/null 2>&1; }
     for loop in $(seq 1 10); do
-      getent hosts {{ $fullName }}-announce-{{ $i }} && break
+      _resolve {{ $fullName }}-announce-{{ $i }} && break
       echo "Waiting for service {{ $fullName }}-announce-{{ $i }} to be ready ($loop) ..." && sleep 1
     done
-    if ! getent hosts "{{ $fullName }}-announce-{{ $i }}" >/dev/null; then
+    if ! _resolve "{{ $fullName }}-announce-{{ $i }}"; then
       echo "Could not resolve the announce address for {{ $fullName }}-announce-{{ $i }}"
       exit 1
     fi

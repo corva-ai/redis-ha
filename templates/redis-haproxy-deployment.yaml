@@ -138,6 +138,12 @@ spec:
         image: {{ .Values.haproxy.image.repository }}:{{ .Values.haproxy.image.tag }}
         imagePullPolicy: {{ .Values.haproxy.image.pullPolicy }}
         securityContext: {{- include "compatibility.renderSecurityContext" (dict "secContext" .Values.haproxy.containerSecurityContext "context" $) | nindent 10 }}
+        {{- with .Values.haproxy.command }}
+        command: {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.haproxy.args }}
+        args: {{- toYaml . | nindent 10 }}
+        {{- end }}
     {{- if or .Values.auth .Values.sentinel.auth}}
         env:
       {{- if .Values.auth }}
