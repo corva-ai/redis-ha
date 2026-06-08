@@ -133,6 +133,11 @@ haproxy:
     # -- HAProxy Image PullPolicy
     pullPolicy: IfNotPresent
 
+  # -- Override haproxy container command (overrides image ENTRYPOINT)
+  command: []
+  # -- Override haproxy container arguments (overrides image CMD)
+  args: []
+
   # -- Custom labels for the haproxy pod
   labels: {}
 
@@ -456,6 +461,8 @@ redis:
     timeout: "0"
     # -- Redis TCP keepalive interval in seconds. Helps detect dead peers and keeps idle sockets visible to intermediate network devices.
     tcp-keepalive: "300"
+    # -- Required when auth is disabled: allows cross-pod sentinel/replica connections without a loopback address.
+    protected-mode: "no"
     min-replicas-to-write: 1
     # -- Value in seconds
     min-replicas-max-lag: 5

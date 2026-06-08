@@ -122,6 +122,7 @@ The following table lists the configurable parameters of the Redis chart and the
 | `redis.config.maxmemory` | Max memory to use for each redis instance. Default is unlimited. | string | `"0"` |
 | `redis.config.maxmemory-policy` | Max memory policy to use for each redis instance. Default is volatile-lru. | string | `"volatile-lru"` |
 | `redis.config.min-replicas-max-lag` | Value in seconds | int | `5` |
+| `redis.config.protected-mode` | Required when auth is disabled: allows cross-pod sentinel/replica connections without a loopback address. | string | `"no"` |
 | `redis.config.repl-diskless-sync` | When enabled, directly sends the RDB over the wire to slaves, without using the disk as intermediate storage. Default is false. | string | `"yes"` |
 | `redis.config.save` | Please note that local (on-disk) RDBs will still be created when re-syncing with a new slave. The only way to prevent this is to enable diskless replication. | string | `"900 1"` |
 | `redis.config.tcp-keepalive` | Redis TCP keepalive interval in seconds. Helps detect dead peers and keeps idle sockets visible to intermediate network devices. | string | `"300"` |
@@ -262,8 +263,10 @@ The following table lists the configurable parameters of the Redis chart and the
 | `haproxy.additionalPorts` | Additional ports to expose on HAProxy service and deployment Each port should have a name, containerPort, and optionally servicePort (defaults to containerPort) | list | `[]` |
 | `haproxy.affinity` | Override all other affinity settings for the haproxy pods with a string. | string | `""` |
 | `haproxy.annotations` | HAProxy template annotations | object | `{}` |
+| `haproxy.args` | Override haproxy container arguments (overrides image CMD) | list | `[]` |
 | `haproxy.checkFall` | haproxy.cfg `check fall` setting | int | `1` |
 | `haproxy.checkInterval` | haproxy.cfg `check inter` setting | string | `"1s"` |
+| `haproxy.command` | Override haproxy container command (overrides image ENTRYPOINT) | list | `[]` |
 | `haproxy.containerPort` | Modify HAProxy deployment container port | int | `6379` |
 | `haproxy.containerSecurityContext` | Security context to be added to the HAProxy containers. | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"runAsNonRoot":true,"seccompProfile":{"type":"RuntimeDefault"}}` |
 | `haproxy.customConfig` | Allows for custom config-haproxy.cfg file to be applied. If this is used then default config will be overwriten | string | `nil` |
