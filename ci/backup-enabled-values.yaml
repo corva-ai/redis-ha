@@ -1,0 +1,19 @@
+haproxy:
+  enabled: true
+
+auth: true
+redisPassword: ci-test-redis-password-do-not-use-in-production
+
+backup:
+  enabled: true
+  image:
+    repository: example.invalid/redis-backup
+    tag: test
+  s3:
+    endpoint: http://garage-storage:3900
+    bucket: corva-redis-backups
+    existingSecret: redis-backup-s3
+  prometheusRule:
+    enabled: true
+    additionalLabels:
+      release: kube-prometheus-stack

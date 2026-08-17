@@ -78,6 +78,50 @@ The following table lists the configurable parameters of the Redis chart and the
 | `auth` | Configures redis with AUTH (requirepass & masterauth conf params) | bool | `false` |
 | `authKey` | Defines the key holding the redis password in existing secret. | string | `"auth"` |
 | `authSecretAnnotations` | Annotations for auth secret | object | `{}` |
+| `backup.activeDeadlineSeconds` | Maximum runtime for a backup Job. The default stops it before cleanup at 09:00. | int | `3300` |
+| `backup.affinity` | Affinity for the backup Pod. | object | `{}` |
+| `backup.annotations` | Backup CronJob annotations. | object | `{}` |
+| `backup.backoffLimit` | Number of failed Job retries. | int | `1` |
+| `backup.commandTimeoutSeconds` | Maximum runtime for each dump/validation command. | int | `1800` |
+| `backup.concurrencyPolicy` | CronJob concurrency policy. | string | `"Forbid"` |
+| `backup.containerSecurityContext` | Backup container security context. | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true,"runAsGroup":65532,"runAsNonRoot":true,"runAsUser":65532,"seccompProfile":{"type":"RuntimeDefault"}}` |
+| `backup.enabled` | Enable the Redis backup CronJob. | bool | `false` |
+| `backup.failedJobsHistoryLimit` | Number of failed Jobs retained by Kubernetes. | int | `3` |
+| `backup.image.pullPolicy` | Redis backup image pull policy. | string | `"IfNotPresent"` |
+| `backup.image.repository` | Redis backup image repository. | string | `"corva/redis-backup"` |
+| `backup.image.tag` | Redis backup image tag. | string | `"master-latest"` |
+| `backup.imagePullSecrets` | Backup CronJob image pull secrets. | list | `[]` |
+| `backup.labels` | Backup CronJob labels. | object | `{}` |
+| `backup.nodeSelector` | Node selector for the backup Pod. | object | `{}` |
+| `backup.podAnnotations` | Backup Pod annotations. | object | `{}` |
+| `backup.podSecurityContext` | Backup Pod security context. | object | `{"fsGroup":65532,"runAsGroup":65532,"runAsNonRoot":true,"runAsUser":65532,"seccompProfile":{"type":"RuntimeDefault"}}` |
+| `backup.prometheusRule.additionalLabels` | Additional labels for the PrometheusRule. | object | `{}` |
+| `backup.prometheusRule.durationFor` | Time the duration condition must persist before alerting. | string | `"5m"` |
+| `backup.prometheusRule.enabled` | Create alerts for stale, long-running, and suspended backups. | bool | `false` |
+| `backup.prometheusRule.maxAgeSeconds` | Maximum age of the last successful backup (26 hours). | int | `93600` |
+| `backup.prometheusRule.maxDurationSeconds` | Maximum running backup duration (30 minutes). | int | `1800` |
+| `backup.prometheusRule.namespace` | Namespace in which to create the PrometheusRule. Defaults to the release namespace. | string | `""` |
+| `backup.prometheusRule.severity` | Alert severity. | string | `"warning"` |
+| `backup.prometheusRule.staleFor` | Time the stale condition must persist before alerting. | string | `"10m"` |
+| `backup.prometheusRule.suspendedFor` | Time the suspended condition must persist before alerting. | string | `"10m"` |
+| `backup.redis.host` | Redis master endpoint. The default points to this release's HAProxy Service. | string | `"{{ include \"redis-ha.fullname\" . }}-haproxy"` |
+| `backup.redis.port` | Redis port. | int | `6379` |
+| `backup.resources` | Backup Pod resource requests and limits. | object | `{}` |
+| `backup.retentionDays` | Delete backup objects older than this number of days. | int | `3` |
+| `backup.s3.accessKeyIdKey` | Access key ID key in the existing Secret. | string | `"AWS_ACCESS_KEY_ID"` |
+| `backup.s3.bucket` | Backup bucket name. | string | `""` |
+| `backup.s3.endpoint` | S3-compatible API endpoint, for example `http://garage-storage:3900`. | string | `""` |
+| `backup.s3.existingSecret` | Existing Secret containing S3 credentials. | string | `""` |
+| `backup.s3.prefix` | Object prefix. Timestamp and filenames are appended by the backup image. | string | `"{{ .Release.Namespace }}/{{ .Release.Name }}"` |
+| `backup.s3.region` | S3 region used for request signing. | string | `"us-east-1"` |
+| `backup.s3.secretAccessKeyKey` | Secret access key key in the existing Secret. | string | `"AWS_SECRET_ACCESS_KEY"` |
+| `backup.schedule` | Cron schedule. Set one hour before Redis cleanup in the target environment. | string | `"0 8 * * *"` |
+| `backup.startingDeadlineSeconds` | Deadline in seconds for starting a missed scheduled backup. | int | `1800` |
+| `backup.successfulJobsHistoryLimit` | Number of successful Jobs retained by Kubernetes. | int | `3` |
+| `backup.suspend` | Suspend scheduled backups. | bool | `false` |
+| `backup.timeZone` | Optional Kubernetes CronJob time zone. Empty uses the controller time zone. | string | `""` |
+| `backup.tmpVolume` | Temporary volume used for the RDB while it is validated and uploaded. | object | `{}` |
+| `backup.tolerations` | Tolerations for the backup Pod. | list | `[]` |
 | `configmap.labels` | Custom labels for the redis configmap | object | `{}` |
 | `containerSecurityContext` | Security context to be added to the Redis containers. | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"runAsNonRoot":true,"runAsUser":1000,"seccompProfile":{"type":"RuntimeDefault"}}` |
 | `emptyDir` | Configuration of `emptyDir`, used only if persistentVolume is disabled and no hostPath specified | object | `{}` |
