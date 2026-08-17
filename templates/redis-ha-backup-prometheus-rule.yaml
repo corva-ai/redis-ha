@@ -1,0 +1,57 @@
+{{- if and .Values.backup.enabled .Values.backup.prometheusRule.enabled }}
+{{- $labels := dict "app" (include "redis-ha.name" .) "heritage" .Release.Service "release" .Release.Name "chart" (include "chartref" .) "app.kubernetes.io/component" "redis-backup" }}
+{{- $labels = mustMergeOverwrite $labels .Values.backup.prometheusRule.additionalLabels }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "redis-ha.backupName" . }}
+  namespace: {{ default .Release.Namespace .Values.backup.prometheusRule.namespace | quote }}
+  labels:
+{{ toYaml $labels | indent 4 }}
+spec:
+  groups:
+    - name: {{ include "redis-ha.backupName" . }}
+      rules:
+        - alert: RedisBackupStale
+          expr: |
+            time() - kube_cronjob_status_last_successful_time{namespace={{ .Release.Namespace | quote }}, cronjob={{ include "redis-ha.backupName" . | quote }}} > {{ .Values.backup.prometheusRule.maxAgeSeconds }}
+            or
+            (
+              time() - kube_cronjob_created{namespace={{ .Release.Namespace | quote }}, cronjob={{ include "redis-ha.backupName" . | quote }}} > {{ .Values.backup.prometheusRule.maxAgeSeconds }}
+              unless on(namespace, cronjob)
+              kube_cronjob_status_last_successful_time{namespace={{ .Release.Namespace | quote }}, cronjob={{ include "redis-ha.backupName" . | quote }}}
+            )
+          for: {{ .Values.backup.prometheusRule.staleFor }}
+          labels:
+            severity: {{ .Values.backup.prometheusRule.severity | quote }}
+          annotations:
+            summary: {{ printf "Redis backup for %s/%s is stale" .Release.Namespace .Release.Name | quote }}
+            description: {{ printf "Redis backup CronJob %s/%s has not completed successfully within the configured maximum age." .Release.Namespace (include "redis-ha.backupName" .) | quote }}
+        - alert: RedisBackupRunningTooLong
+          expr: |
+            (
+              (
+                (time() - kube_job_status_start_time{namespace={{ .Release.Namespace | quote }}})
+                  * on(namespace, job_name) group_left()
+                    kube_job_labels{namespace={{ .Release.Namespace | quote }}, label_app_kubernetes_io_component="redis-backup", label_app_kubernetes_io_instance={{ .Release.Name | quote }}}
+              )
+                and on(namespace, job_name)
+                  (kube_job_status_active{namespace={{ .Release.Namespace | quote }}} == 1)
+            )
+              > {{ .Values.backup.prometheusRule.maxDurationSeconds }}
+          for: {{ .Values.backup.prometheusRule.durationFor }}
+          labels:
+            severity: {{ .Values.backup.prometheusRule.severity | quote }}
+          annotations:
+            summary: {{ printf "Redis backup for %s/%s is taking too long" .Release.Namespace .Release.Name | quote }}
+            description: {{ printf "A Redis backup Job for %s/%s has been running longer than the configured maximum duration." .Release.Namespace .Release.Name | quote }}
+        - alert: RedisBackupSuspended
+          expr: |
+            kube_cronjob_spec_suspend{namespace={{ .Release.Namespace | quote }}, cronjob={{ include "redis-ha.backupName" . | quote }}} == 1
+          for: {{ .Values.backup.prometheusRule.suspendedFor }}
+          labels:
+            severity: {{ .Values.backup.prometheusRule.severity | quote }}
+          annotations:
+            summary: {{ printf "Redis backup for %s/%s is suspended" .Release.Namespace .Release.Name | quote }}
+            description: {{ printf "Redis backup CronJob %s/%s has been suspended." .Release.Namespace (include "redis-ha.backupName" .) | quote }}
+{{- end }}
