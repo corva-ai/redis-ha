@@ -6,12 +6,15 @@ redisPassword: ci-test-redis-password-do-not-use-in-production
 
 backup:
   enabled: true
+  schedule: "17 3 * * *"
+  retentionDays: 7
   image:
     repository: example.invalid/redis-backup
     tag: test
   s3:
     endpoint: http://garage-storage:3900
     bucket: corva-redis-backups
+    prefix: contract/{{ .Release.Namespace }}/{{ .Release.Name }}
     existingSecret: redis-backup-s3
   prometheusRule:
     enabled: true

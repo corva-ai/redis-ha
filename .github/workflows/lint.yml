@@ -9,6 +9,18 @@ permissions:
   contents: read
 
 jobs:
+  backup-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.16.3
+
+      - name: Verify backup chart contract
+        run: ./scripts/verify-backup-contract.sh
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -80,7 +92,13 @@ jobs:
               helm template release . -f "$s" > .kubeconform/manifests.yaml
             fi
             echo "::group::kubeconform $name"
-            if ! kubeconform -strict -summary -kubernetes-version 1.25.0 .kubeconform/manifests.yaml; then
+            if ! kubeconform \
+              -strict \
+              -summary \
+              -kubernetes-version 1.25.0 \
+              -schema-location default \
+              -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+              .kubeconform/manifests.yaml; then
               fail=1
             fi
             echo "::endgroup::"
@@ -95,7 +113,13 @@ jobs:
             --set tls.certFile=tls.crt --set tls.keyFile=tls.key --set tls.caCertFile=ca.crt \
             > .kubeconform/manifests.yaml
           echo "::group::kubeconform tls-on (schema-only)"
-          if ! kubeconform -strict -summary -kubernetes-version 1.25.0 .kubeconform/manifests.yaml; then
+          if ! kubeconform \
+            -strict \
+            -summary \
+            -kubernetes-version 1.25.0 \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' \
+            .kubeconform/manifests.yaml; then
             fail=1
           fi
           echo "::endgroup::"
