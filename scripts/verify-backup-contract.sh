@@ -14,6 +14,7 @@ trap 'rm -rf "$work_dir"' EXIT
 
 helm template contract . --namespace contract-ns > "$work_dir/default.yaml"
 helm template contract . --namespace contract-ns -f "$scenario" > "$work_dir/enabled.yaml"
+helm template contract . --namespace contract-ns -f "$scenario" -f ci/network-policy-values.yaml > "$work_dir/network-policy.yaml"
 
 assert_count() {
   local expected=$1
@@ -61,10 +62,37 @@ assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "AWS_ACCESS_KEY_ID").valueFrom.secretKeyRef.name' 'redis-backup-s3' 'access key Secret reference'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "AWS_SECRET_ACCESS_KEY").valueFrom.secretKeyRef.name' 'redis-backup-s3' 'secret key Secret reference'
 
+network_policy_cronjob="$work_dir/network-policy-cronjob.yaml"
+yq eval 'select(.kind == "CronJob" and .metadata.labels."app.kubernetes.io/component" == "redis-backup")' "$work_dir/network-policy.yaml" > "$network_policy_cronjob"
+network_policy_backup_app=$(yq eval -r '.spec.jobTemplate.spec.template.metadata.labels.app' "$network_policy_cronjob")
+if [[ "$network_policy_backup_app" != "redis-ha-backup" ]]; then
+  echo "::error::Backup pod must not match the Redis Service and NetworkPolicy selector; rendered app label '$network_policy_backup_app'"
+  exit 1
+fi
+
+haproxy_backup_ingress=$(yq eval-all '[select(.kind == "NetworkPolicy" and .metadata.name == "contract-redis-ha-haproxy-network-policy").spec.ingress[].from[]?.podSelector.matchLabels | select(.release == "contract" and .app == "redis-ha-backup" and .component == "redis-backup")] | length' "$work_dir/network-policy.yaml")
+if [[ "$haproxy_backup_ingress" != "1" ]]; then
+  echo "::error::HAProxy NetworkPolicy must allow the backup pod; rendered $haproxy_backup_ingress matching ingress rule(s)"
+  exit 1
+fi
+
 alerts=$(yq eval-all '[select(.kind == "PrometheusRule" and .metadata.labels."app.kubernetes.io/component" == "redis-backup").spec.groups[].rules[].alert] | sort | join(",")' "$work_dir/enabled.yaml")
 expected_alerts='RedisBackupRunningTooLong,RedisBackupStale,RedisBackupSuspended'
 if [[ "$alerts" != "$expected_alerts" ]]; then
   echo "::error::Expected backup alerts '$expected_alerts', rendered '$alerts'"
+  exit 1
+fi
+
+backup_rule="$work_dir/backup-rule.yaml"
+yq eval 'select(.kind == "PrometheusRule" and .metadata.labels."app.kubernetes.io/component" == "redis-backup")' "$work_dir/enabled.yaml" > "$backup_rule"
+running_alert_expr=$(yq eval -r '.spec.groups[].rules[] | select(.alert == "RedisBackupRunningTooLong").expr' "$backup_rule")
+if [[ "$running_alert_expr" != *'kube_job_owner'* || "$running_alert_expr" == *'kube_job_labels'* ]]; then
+  echo "::error::RedisBackupRunningTooLong must select Jobs through kube_job_owner instead of kube_job_labels"
+  exit 1
+fi
+
+if helm template contract . --namespace contract-ns -f "$scenario" -f ci/backup-haproxy-tls-values.yaml > "$work_dir/tls.yaml" 2>&1; then
+  echo "::error::backup.enabled with haproxy.tls.enabled must fail until backup TLS support is implemented"
   exit 1
 fi
 
