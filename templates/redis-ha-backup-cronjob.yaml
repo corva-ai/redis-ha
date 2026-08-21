@@ -2,6 +2,9 @@
 {{- if not .Values.haproxy.enabled }}
 {{- fail "backup.enabled requires haproxy.enabled so the backup always targets the current Redis master" }}
 {{- end }}
+{{- if .Values.haproxy.tls.enabled }}
+{{- fail "backup.enabled does not support haproxy.tls.enabled; configure a non-TLS HAProxy endpoint or add backup TLS support first" }}
+{{- end }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -39,7 +42,11 @@ spec:
       template:
         metadata:
           labels:
-{{ include "labels.standard" . | indent 12 }}
+            app: {{ template "redis-ha.name" . }}-backup
+            heritage: {{ .Release.Service | quote }}
+            release: {{ .Release.Name | quote }}
+            chart: {{ template "chartref" . }}
+            component: redis-backup
             app.kubernetes.io/component: redis-backup
             app.kubernetes.io/instance: {{ .Release.Name | quote }}
           {{- with .Values.backup.podAnnotations }}

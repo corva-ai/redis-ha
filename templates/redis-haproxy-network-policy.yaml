@@ -54,6 +54,16 @@ spec:
               app: {{ template "redis-ha.name" . }}
       ports:
       {{- include "redis-ports" . | nindent 8 }}
+    {{- if .Values.backup.enabled }}
+    - from:
+        - podSelector:
+            matchLabels:
+              release: {{ .Release.Name }}
+              app: {{ template "redis-ha.name" . }}-backup
+              component: redis-backup
+      ports:
+      {{- include "redis-ports" . | nindent 8 }}
+    {{- end }}
     {{-  range $rule := .Values.haproxy.networkPolicy.ingressRules }}
     - from:
         {{- (tpl (toYaml $rule.selectors) $) | nindent 8 }}

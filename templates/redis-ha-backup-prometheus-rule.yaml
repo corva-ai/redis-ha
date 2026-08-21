@@ -33,7 +33,7 @@ spec:
               (
                 (time() - kube_job_status_start_time{namespace={{ .Release.Namespace | quote }}})
                   * on(namespace, job_name) group_left()
-                    kube_job_labels{namespace={{ .Release.Namespace | quote }}, label_app_kubernetes_io_component="redis-backup", label_app_kubernetes_io_instance={{ .Release.Name | quote }}}
+                    kube_job_owner{namespace={{ .Release.Namespace | quote }}, owner_kind="CronJob", owner_name={{ include "redis-ha.backupName" . | quote }}}
               )
                 and on(namespace, job_name)
                   (kube_job_status_active{namespace={{ .Release.Namespace | quote }}} == 1)
