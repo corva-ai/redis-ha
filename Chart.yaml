@@ -6,7 +6,7 @@ keywords:
   - keyvalue
   - database
 version: 5.2.0
-appVersion: 8.6.3 # renovate: datasource=docker depName=library/redis
+appVersion: 8.10.1 # renovate: datasource=docker depName=library/redis
 kubeVersion: ">= 1.25.0-0"
 description: This Helm chart provides a highly available Redis implementation
   with a master/slave configuration and uses Sentinel sidecars for failover
