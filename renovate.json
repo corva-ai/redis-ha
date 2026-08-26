@@ -4,7 +4,7 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["^Chart\\.yaml$", "^values\\.yaml$"],
+      "managerFilePatterns": ["/^Chart\\.yaml$/", "/^values\\.yaml$/"],
       "matchStrings": [
         "(?:appVersion|tag):\\s+\"?(?<currentValue>[\\w.\\-]+)\"?\\s*#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)"
       ],
