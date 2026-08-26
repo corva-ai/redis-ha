@@ -14,7 +14,7 @@ image:
   # -- Redis image repository
   repository: public.ecr.aws/docker/library/redis
   # -- Redis image tag
-  tag: 8.6.3-alpine # renovate: datasource=docker depName=library/redis
+  tag: 8.10.1-alpine # renovate: datasource=docker depName=library/redis
   # -- Redis image pull policy
   pullPolicy: IfNotPresent
 
