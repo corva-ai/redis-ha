@@ -129,7 +129,7 @@ haproxy:
     # -- HAProxy Image Repository
     repository: public.ecr.aws/docker/library/haproxy
     # -- HAProxy Image Tag
-    tag: 3.3.10-alpine # renovate: datasource=docker depName=library/haproxy
+    tag: 3.4.4-alpine # renovate: datasource=docker depName=library/haproxy
     # -- HAProxy Image PullPolicy
     pullPolicy: IfNotPresent
 
