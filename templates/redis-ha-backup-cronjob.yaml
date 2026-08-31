@@ -65,7 +65,7 @@ spec:
 {{ include "compatibility.renderSecurityContext" (dict "secContext" .Values.backup.podSecurityContext "context" $) | indent 12 }}
           containers:
             - name: redis-backup
-              image: "{{ .Values.backup.image.repository }}:{{ .Values.backup.image.tag }}"
+              image: "{{ required "backup.image.repository is required" .Values.backup.image.repository }}:{{ required "backup.image.tag must be an immutable versioned tag" .Values.backup.image.tag }}"
               imagePullPolicy: {{ .Values.backup.image.pullPolicy }}
               terminationMessagePolicy: FallbackToLogsOnError
               securityContext:

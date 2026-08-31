@@ -1038,10 +1038,10 @@ backup:
   # -- Delete backup objects older than this number of days.
   retentionDays: 3
   image:
-    # -- Redis backup image repository.
-    repository: corva/redis-backup
-    # -- Redis backup image tag.
-    tag: master-latest
+    # -- Redis HA backup image repository.
+    repository: corva/redis-ha-backup
+    # -- Immutable Redis HA backup image tag. Configure this in environment values.
+    tag: ""
     # -- Redis backup image pull policy.
     pullPolicy: IfNotPresent
   redis:
