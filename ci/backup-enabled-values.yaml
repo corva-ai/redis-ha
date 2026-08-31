@@ -5,6 +5,9 @@ haproxy:
 auth: true
 redisPassword: ci-test-redis-password-do-not-use-in-production
 
+extraLabels:
+  ownership: platform
+
 backup:
   enabled: true
   schedule: "17 3 * * *"

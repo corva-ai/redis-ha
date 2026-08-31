@@ -10,7 +10,12 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 
 {{/* Name of the Redis backup CronJob. */}}
 {{- define "redis-ha.backupName" -}}
-{{- printf "%s-backup" (include "redis-ha.fullname" .) | trunc 52 | trimSuffix "-" -}}
+{{- $fullname := include "redis-ha.fullname" . -}}
+{{- if gt (len $fullname) 45 -}}
+{{- printf "%s-%s-backup" ($fullname | trunc 36 | trimSuffix "-") ($fullname | sha256sum | trunc 8) -}}
+{{- else -}}
+{{- printf "%s-backup" $fullname -}}
+{{- end -}}
 {{- end -}}
 
 {{/*

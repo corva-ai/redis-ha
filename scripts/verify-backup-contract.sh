@@ -3,6 +3,7 @@
 set -euo pipefail
 
 scenario=ci/backup-enabled-values.yaml
+kube_version=1.27.0
 
 if [[ ! -f "$scenario" ]]; then
   echo "::error::$scenario is required by the Redis backup contract"
@@ -12,9 +13,9 @@ fi
 work_dir=$(mktemp -d)
 trap 'rm -rf "$work_dir"' EXIT
 
-helm template contract . --namespace contract-ns > "$work_dir/default.yaml"
-helm template contract . --namespace contract-ns -f "$scenario" --set backup.prometheusRule.enabled=true > "$work_dir/enabled.yaml"
-helm template contract . --namespace contract-ns -f "$scenario" -f ci/network-policy-values.yaml > "$work_dir/network-policy.yaml"
+helm template contract . --namespace contract-ns --kube-version "$kube_version" > "$work_dir/default.yaml"
+helm template contract . --namespace contract-ns --kube-version "$kube_version" -f "$scenario" --set backup.prometheusRule.enabled=true > "$work_dir/enabled.yaml"
+helm template contract . --namespace contract-ns --kube-version "$kube_version" -f "$scenario" -f ci/network-policy-values.yaml > "$work_dir/network-policy.yaml"
 
 assert_count() {
   local expected=$1
@@ -56,6 +57,7 @@ assert_value() {
 
 assert_value '.spec.schedule' '17 3 * * *' 'backup.schedule propagation'
 assert_value '.spec.timeZone' 'UTC' 'backup.timeZone propagation'
+assert_value '.metadata.labels.ownership' 'platform' 'extraLabels propagation to backup CronJob'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "REDIS_PORT").value' '6381' 'derived backup.redis.port propagation'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "RETENTION_DAYS").value' '7' 'backup.retentionDays propagation'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "S3_ENDPOINT").value' 'http://garage-storage:3900' 'backup.s3.endpoint propagation'
@@ -93,6 +95,11 @@ fi
 
 backup_rule="$work_dir/backup-rule.yaml"
 yq eval 'select(.kind == "PrometheusRule" and .metadata.labels."app.kubernetes.io/component" == "redis-backup")' "$work_dir/enabled.yaml" > "$backup_rule"
+backup_rule_ownership=$(yq eval -r '.metadata.labels.ownership' "$backup_rule")
+if [[ "$backup_rule_ownership" != "platform" ]]; then
+  echo "::error::extraLabels must propagate to the backup PrometheusRule; rendered '$backup_rule_ownership'"
+  exit 1
+fi
 running_alert_expr=$(yq eval -r '.spec.groups[].rules[] | select(.alert == "RedisBackupRunningTooLong").expr' "$backup_rule")
 if [[ "$running_alert_expr" != *'kube_job_owner'* || "$running_alert_expr" == *'kube_job_labels'* ]]; then
   echo "::error::RedisBackupRunningTooLong must select Jobs through kube_job_owner instead of kube_job_labels"
@@ -106,6 +113,17 @@ fi
 
 if helm template contract . --namespace contract-ns --kube-version 1.26.0 -f "$scenario" > "$work_dir/timezone.yaml" 2>&1; then
   echo "::error::backup.timeZone must fail for Kubernetes versions before 1.27"
+  exit 1
+fi
+
+long_fullname_a='redis-ha-backup-uniqueness-test-name-000000000001'
+long_fullname_b='redis-ha-backup-uniqueness-test-name-000000000002'
+helm template contract-a . --namespace contract-ns --kube-version "$kube_version" -f "$scenario" --set backup.prometheusRule.enabled=true --set fullnameOverride="$long_fullname_a" > "$work_dir/long-name-a.yaml"
+helm template contract-b . --namespace contract-ns --kube-version "$kube_version" -f "$scenario" --set backup.prometheusRule.enabled=true --set fullnameOverride="$long_fullname_b" > "$work_dir/long-name-b.yaml"
+backup_name_a=$(yq eval -r 'select(.kind == "CronJob" and .metadata.labels."app.kubernetes.io/component" == "redis-backup").metadata.name' "$work_dir/long-name-a.yaml")
+backup_name_b=$(yq eval -r 'select(.kind == "CronJob" and .metadata.labels."app.kubernetes.io/component" == "redis-backup").metadata.name' "$work_dir/long-name-b.yaml")
+if [[ "$backup_name_a" == "$backup_name_b" || ${#backup_name_a} -gt 52 || ${#backup_name_b} -gt 52 || "$backup_name_a" != *-backup || "$backup_name_b" != *-backup ]]; then
+  echo "::error::Long Redis HA fullnames must produce distinct CronJob-safe backup names ending in -backup"
   exit 1
 fi
 
