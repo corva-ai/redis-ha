@@ -69,6 +69,12 @@ assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "AWS_ACCESS_KEY_ID").valueFrom.secretKeyRef.name' 'redis-ha-backup-s3' 'access key Secret reference'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "AWS_SECRET_ACCESS_KEY").valueFrom.secretKeyRef.name' 'redis-ha-backup-s3' 'secret key Secret reference'
 
+service_test_port=$(yq eval -r 'select(.kind == "Pod" and .metadata.annotations."helm.sh/hook" == "test-success").spec.containers[0].command[2]' "$work_dir/enabled.yaml")
+if [[ "$service_test_port" != *'-p 6381 '* ]]; then
+  echo "::error::HAProxy Helm test must use haproxy.servicePort; rendered '$service_test_port'"
+  exit 1
+fi
+
 network_policy_cronjob="$work_dir/network-policy-cronjob.yaml"
 yq eval 'select(.kind == "CronJob" and .metadata.labels."app.kubernetes.io/component" == "redis-backup")' "$work_dir/network-policy.yaml" > "$network_policy_cronjob"
 network_policy_backup_app=$(yq eval -r '.spec.jobTemplate.spec.template.metadata.labels.app' "$network_policy_cronjob")
@@ -86,6 +92,12 @@ fi
 haproxy_backup_port=$(yq eval -r 'select(.kind == "NetworkPolicy" and .metadata.name == "contract-redis-ha-haproxy-network-policy").spec.ingress[] | select(.from[0].podSelector.matchLabels.app == "redis-ha-backup").ports[0].port' "$work_dir/network-policy.yaml")
 if [[ "$haproxy_backup_port" != "6382" ]]; then
   echo "::error::HAProxy NetworkPolicy must allow backup traffic on haproxy.containerPort; rendered '$haproxy_backup_port'"
+  exit 1
+fi
+
+haproxy_client_port=$(yq eval -r 'select(.kind == "NetworkPolicy" and .metadata.name == "contract-redis-ha-haproxy-network-policy").spec.ingress[] | select(.from[0].podSelector.matchLabels.app == "redis-ha").ports[0].port' "$work_dir/network-policy.yaml")
+if [[ "$haproxy_client_port" != "6382" ]]; then
+  echo "::error::HAProxy NetworkPolicy must allow ordinary client traffic on haproxy.containerPort; rendered '$haproxy_client_port'"
   exit 1
 fi
 
