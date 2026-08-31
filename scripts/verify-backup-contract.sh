@@ -101,6 +101,12 @@ if [[ "$haproxy_client_port" != "6382" ]]; then
   exit 1
 fi
 
+haproxy_rule_port=$(yq eval -r 'select(.kind == "NetworkPolicy" and .metadata.name == "contract-redis-ha-haproxy-network-policy").spec.ingress[] | select(.from[0].podSelector.matchLabels.app == "ci-test-haproxy-client").ports[0].port' "$work_dir/network-policy.yaml")
+if [[ "$haproxy_rule_port" != "6382" ]]; then
+  echo "::error::Portless HAProxy NetworkPolicy ingressRules must default to haproxy.containerPort; rendered '$haproxy_rule_port'"
+  exit 1
+fi
+
 alerts=$(yq eval-all '[select(.kind == "PrometheusRule" and .metadata.labels."app.kubernetes.io/component" == "redis-backup").spec.groups[].rules[].alert] | sort | join(",")' "$work_dir/enabled.yaml")
 expected_alerts='RedisBackupRunningTooLong,RedisBackupStale,RedisBackupSuspended'
 if [[ "$alerts" != "$expected_alerts" ]]; then
