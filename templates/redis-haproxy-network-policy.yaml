@@ -53,7 +53,8 @@ spec:
               release: {{ .Release.Name }}
               app: {{ template "redis-ha.name" . }}
       ports:
-      {{- include "redis-ports" . | nindent 8 }}
+        - port: {{ .Values.haproxy.containerPort }}
+          protocol: TCP
     {{- if .Values.backup.enabled }}
     - from:
         - podSelector:
