@@ -89,7 +89,7 @@ The following table lists the configurable parameters of the Redis chart and the
 | `backup.failedJobsHistoryLimit` | Number of failed Jobs retained by Kubernetes. | int | `3` |
 | `backup.image.pullPolicy` | Redis backup image pull policy. | string | `"IfNotPresent"` |
 | `backup.image.repository` | Redis HA backup image repository. | string | `"corva/redis-ha-backup"` |
-| `backup.image.tag` | Immutable Redis HA backup image tag. | string | `""` |
+| `backup.image.tag` | Immutable Redis HA backup image tag. Configure this in environment values. | string | `""` |
 | `backup.imagePullSecrets` | Backup CronJob image pull secrets. | list | `[]` |
 | `backup.labels` | Backup CronJob labels. | object | `{}` |
 | `backup.nodeSelector` | Node selector for the backup Pod. | object | `{}` |
@@ -105,7 +105,7 @@ The following table lists the configurable parameters of the Redis chart and the
 | `backup.prometheusRule.staleFor` | Time the stale condition must persist before alerting. | string | `"10m"` |
 | `backup.prometheusRule.suspendedFor` | Time the suspended condition must persist before alerting. | string | `"10m"` |
 | `backup.redis.host` | Redis master endpoint. The default points to this release's HAProxy Service. | string | `"{{ include \"redis-ha.fullname\" . }}-haproxy"` |
-| `backup.redis.port` | Redis port. | int | `6379` |
+| `backup.redis.port` | Redis port. Empty uses `haproxy.servicePort`. | string | `""` |
 | `backup.resources` | Backup Pod resource requests and limits. | object | `{}` |
 | `backup.retentionDays` | Delete backup objects older than this number of days. | int | `3` |
 | `backup.s3.accessKeyIdKey` | Access key ID key in the existing Secret. | string | `"AWS_ACCESS_KEY_ID"` |
@@ -119,7 +119,7 @@ The following table lists the configurable parameters of the Redis chart and the
 | `backup.startingDeadlineSeconds` | Deadline in seconds for starting a missed scheduled backup. | int | `1800` |
 | `backup.successfulJobsHistoryLimit` | Number of successful Jobs retained by Kubernetes. | int | `3` |
 | `backup.suspend` | Suspend scheduled backups. | bool | `false` |
-| `backup.timeZone` | Optional Kubernetes CronJob time zone. Empty uses the controller time zone. | string | `""` |
+| `backup.timeZone` | Optional Kubernetes CronJob time zone. Requires Kubernetes 1.27 or later; empty uses the controller time zone. | string | `""` |
 | `backup.tmpVolume` | Temporary volume used for the RDB while it is validated and uploaded. | object | `{}` |
 | `backup.tolerations` | Tolerations for the backup Pod. | list | `[]` |
 | `configmap.labels` | Custom labels for the redis configmap | object | `{}` |
