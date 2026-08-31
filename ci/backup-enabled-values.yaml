@@ -1,5 +1,6 @@
 haproxy:
   enabled: true
+  servicePort: 6381
 
 auth: true
 redisPassword: ci-test-redis-password-do-not-use-in-production
@@ -7,6 +8,7 @@ redisPassword: ci-test-redis-password-do-not-use-in-production
 backup:
   enabled: true
   schedule: "17 3 * * *"
+  timeZone: UTC
   retentionDays: 7
   image:
     repository: example.invalid/redis-ha-backup

@@ -1017,7 +1017,7 @@ backup:
   enabled: false
   # -- Cron schedule. Set one hour before Redis cleanup in the target environment.
   schedule: "0 8 * * *"
-  # -- Optional Kubernetes CronJob time zone. Empty uses the controller time zone.
+  # -- Optional Kubernetes CronJob time zone. Requires Kubernetes 1.27 or later; empty uses the controller time zone.
   timeZone: ""
   # -- Suspend scheduled backups.
   suspend: false
@@ -1047,8 +1047,8 @@ backup:
   redis:
     # -- Redis master endpoint. The default points to this release's HAProxy Service.
     host: '{{ include "redis-ha.fullname" . }}-haproxy'
-    # -- Redis port.
-    port: 6379
+    # -- Redis port. Empty uses `haproxy.servicePort`.
+    port: ""
   s3:
     # -- S3-compatible API endpoint, for example `http://garage-storage:3900`.
     endpoint: ""

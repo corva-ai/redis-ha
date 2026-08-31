@@ -55,6 +55,8 @@ assert_value() {
 }
 
 assert_value '.spec.schedule' '17 3 * * *' 'backup.schedule propagation'
+assert_value '.spec.timeZone' 'UTC' 'backup.timeZone propagation'
+assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "REDIS_PORT").value' '6381' 'derived backup.redis.port propagation'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "RETENTION_DAYS").value' '7' 'backup.retentionDays propagation'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "S3_ENDPOINT").value' 'http://garage-storage:3900' 'backup.s3.endpoint propagation'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "S3_BUCKET").value' 'corva-redis-ha-backups' 'backup.s3.bucket propagation'
@@ -93,6 +95,11 @@ fi
 
 if helm template contract . --namespace contract-ns -f "$scenario" -f ci/backup-haproxy-tls-values.yaml > "$work_dir/tls.yaml" 2>&1; then
   echo "::error::backup.enabled with haproxy.tls.enabled must fail until backup TLS support is implemented"
+  exit 1
+fi
+
+if helm template contract . --namespace contract-ns --kube-version 1.26.0 -f "$scenario" > "$work_dir/timezone.yaml" 2>&1; then
+  echo "::error::backup.timeZone must fail for Kubernetes versions before 1.27"
   exit 1
 fi
 
