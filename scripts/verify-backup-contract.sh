@@ -57,10 +57,10 @@ assert_value() {
 assert_value '.spec.schedule' '17 3 * * *' 'backup.schedule propagation'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "RETENTION_DAYS").value' '7' 'backup.retentionDays propagation'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "S3_ENDPOINT").value' 'http://garage-storage:3900' 'backup.s3.endpoint propagation'
-assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "S3_BUCKET").value' 'corva-redis-backups' 'backup.s3.bucket propagation'
+assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "S3_BUCKET").value' 'corva-redis-ha-backups' 'backup.s3.bucket propagation'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "S3_PREFIX").value' 'contract/contract-ns/contract' 'templated backup.s3.prefix propagation'
-assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "AWS_ACCESS_KEY_ID").valueFrom.secretKeyRef.name' 'redis-backup-s3' 'access key Secret reference'
-assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "AWS_SECRET_ACCESS_KEY").valueFrom.secretKeyRef.name' 'redis-backup-s3' 'secret key Secret reference'
+assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "AWS_ACCESS_KEY_ID").valueFrom.secretKeyRef.name' 'redis-ha-backup-s3' 'access key Secret reference'
+assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "AWS_SECRET_ACCESS_KEY").valueFrom.secretKeyRef.name' 'redis-ha-backup-s3' 'secret key Secret reference'
 
 network_policy_cronjob="$work_dir/network-policy-cronjob.yaml"
 yq eval 'select(.kind == "CronJob" and .metadata.labels."app.kubernetes.io/component" == "redis-backup")' "$work_dir/network-policy.yaml" > "$network_policy_cronjob"

@@ -88,8 +88,8 @@ The following table lists the configurable parameters of the Redis chart and the
 | `backup.enabled` | Enable the Redis backup CronJob. | bool | `false` |
 | `backup.failedJobsHistoryLimit` | Number of failed Jobs retained by Kubernetes. | int | `3` |
 | `backup.image.pullPolicy` | Redis backup image pull policy. | string | `"IfNotPresent"` |
-| `backup.image.repository` | Redis backup image repository. | string | `"corva/redis-backup"` |
-| `backup.image.tag` | Redis backup image tag. | string | `"master-latest"` |
+| `backup.image.repository` | Redis HA backup image repository. | string | `"corva/redis-ha-backup"` |
+| `backup.image.tag` | Immutable Redis HA backup image tag. | string | `""` |
 | `backup.imagePullSecrets` | Backup CronJob image pull secrets. | list | `[]` |
 | `backup.labels` | Backup CronJob labels. | object | `{}` |
 | `backup.nodeSelector` | Node selector for the backup Pod. | object | `{}` |
