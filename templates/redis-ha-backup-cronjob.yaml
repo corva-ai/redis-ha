@@ -8,18 +8,16 @@
 {{- if and .Values.backup.timeZone (not (semverCompare ">=1.27-0" .Capabilities.KubeVersion.Version)) }}
 {{- fail "backup.timeZone requires Kubernetes 1.27 or later" }}
 {{- end }}
+{{- $labels := dict "app" (include "redis-ha.name" .) "heritage" .Release.Service "release" .Release.Name "chart" (include "chartref" .) "app.kubernetes.io/component" "redis-backup" "app.kubernetes.io/instance" .Release.Name }}
+{{- $labels = mustMergeOverwrite $labels .Values.extraLabels }}
+{{- $labels = mustMergeOverwrite $labels .Values.backup.labels }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ include "redis-ha.backupName" . }}
   namespace: {{ .Release.Namespace | quote }}
   labels:
-{{ include "labels.standard" . | indent 4 }}
-    app.kubernetes.io/component: redis-backup
-    app.kubernetes.io/instance: {{ .Release.Name | quote }}
-    {{- with .Values.backup.labels }}
-{{ toYaml . | indent 4 }}
-    {{- end }}
+{{ toYaml $labels | indent 4 }}
   {{- with .Values.backup.annotations }}
   annotations:
 {{ toYaml . | indent 4 }}

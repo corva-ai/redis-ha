@@ -1,5 +1,6 @@
 {{- if and .Values.backup.enabled .Values.backup.prometheusRule.enabled }}
 {{- $labels := dict "app" (include "redis-ha.name" .) "heritage" .Release.Service "release" .Release.Name "chart" (include "chartref" .) "app.kubernetes.io/component" "redis-backup" }}
+{{- $labels = mustMergeOverwrite $labels .Values.extraLabels }}
 {{- $labels = mustMergeOverwrite $labels .Values.backup.prometheusRule.additionalLabels }}
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
