@@ -1010,6 +1010,119 @@ restore:
   redis:
     source: ""
 
+## Daily Redis RDB backup to S3-compatible object storage. The backup requires
+## HAProxy so the dump is always taken from the current Redis master.
+backup:
+  # -- Enable the Redis backup CronJob.
+  enabled: false
+  # -- Cron schedule. Set one hour before Redis cleanup in the target environment.
+  schedule: "0 8 * * *"
+  # -- Optional Kubernetes CronJob time zone. Requires Kubernetes 1.27 or later; empty uses the controller time zone.
+  timeZone: ""
+  # -- Suspend scheduled backups.
+  suspend: false
+  # -- CronJob concurrency policy.
+  concurrencyPolicy: Forbid
+  # -- Deadline in seconds for starting a missed scheduled backup.
+  startingDeadlineSeconds: 1800
+  # -- Maximum runtime for a backup Job. The default stops it before cleanup at 09:00.
+  activeDeadlineSeconds: 3300
+  # -- Maximum runtime for each dump/validation command.
+  commandTimeoutSeconds: 1800
+  # -- Number of failed Job retries.
+  backoffLimit: 1
+  # -- Number of successful Jobs retained by Kubernetes.
+  successfulJobsHistoryLimit: 3
+  # -- Number of failed Jobs retained by Kubernetes.
+  failedJobsHistoryLimit: 3
+  # -- Delete backup objects older than this number of days.
+  retentionDays: 3
+  image:
+    # -- Redis HA backup image repository.
+    repository: corva/redis-ha-backup
+    # -- Immutable Redis HA backup image tag. Configure this in environment values.
+    tag: ""
+    # -- Redis backup image pull policy.
+    pullPolicy: IfNotPresent
+  redis:
+    # -- Redis master endpoint. The default points to this release's HAProxy Service.
+    host: '{{ include "redis-ha.fullname" . }}-haproxy'
+    # -- Redis port. Empty uses `haproxy.servicePort`.
+    port: ""
+  s3:
+    # -- S3-compatible API endpoint, for example `http://garage-storage:3900`.
+    endpoint: ""
+    # -- Backup bucket name.
+    bucket: ""
+    # -- Object prefix. Timestamp and filenames are appended by the backup image.
+    prefix: '{{ .Release.Namespace }}/{{ .Release.Name }}'
+    # -- S3 region used for request signing.
+    region: us-east-1
+    # -- Existing Secret containing S3 credentials.
+    existingSecret: ""
+    # -- Access key ID key in the existing Secret.
+    accessKeyIdKey: AWS_ACCESS_KEY_ID
+    # -- Secret access key key in the existing Secret.
+    secretAccessKeyKey: AWS_SECRET_ACCESS_KEY
+  # -- Backup CronJob image pull secrets.
+  imagePullSecrets: []
+  # -- Backup CronJob labels.
+  labels: {}
+  # -- Backup CronJob annotations.
+  annotations: {}
+  # -- Backup Pod annotations.
+  podAnnotations: {}
+  # -- Backup Pod resource requests and limits.
+  resources: {}
+  # -- Temporary volume used for the RDB while it is validated and uploaded.
+  tmpVolume: {}
+  # sizeLimit: 20Gi
+  # -- Backup Pod security context.
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    fsGroup: 65532
+    seccompProfile:
+      type: RuntimeDefault
+  # -- Backup container security context.
+  containerSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 65532
+    runAsGroup: 65532
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+    seccompProfile:
+      type: RuntimeDefault
+  # -- Node selector for the backup Pod.
+  nodeSelector: {}
+  # -- Affinity for the backup Pod.
+  affinity: {}
+  # -- Tolerations for the backup Pod.
+  tolerations: []
+  prometheusRule:
+    # -- Create alerts for stale, long-running, and suspended backups.
+    enabled: false
+    # -- Namespace in which to create the PrometheusRule. Defaults to the release namespace.
+    namespace: ""
+    # -- Additional labels for the PrometheusRule.
+    additionalLabels: {}
+    # -- Alert severity.
+    severity: warning
+    # -- Maximum age of the last successful backup (26 hours).
+    maxAgeSeconds: 93600
+    # -- Time the stale condition must persist before alerting.
+    staleFor: 10m
+    # -- Maximum running backup duration (30 minutes).
+    maxDurationSeconds: 1800
+    # -- Time the duration condition must persist before alerting.
+    durationFor: 5m
+    # -- Time the suspended condition must persist before alerting.
+    suspendedFor: 10m
+
 ## Custom PrometheusRule to be defined
 ## The value is evaluated as a template, so, for example, the value can depend on .Release or .Chart
 ## ref: https://github.com/coreos/prometheus-operator#customresourcedefinitions

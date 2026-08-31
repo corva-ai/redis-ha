@@ -1,0 +1,4 @@
+# Kept outside ci/ so chart-testing and the general Kubernetes 1.25 schema
+# loop do not render it. CronJob.spec.timeZone requires Kubernetes 1.27+.
+backup:
+  timeZone: UTC

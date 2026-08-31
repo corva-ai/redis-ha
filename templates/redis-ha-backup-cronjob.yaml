@@ -1,0 +1,131 @@
+{{- if .Values.backup.enabled }}
+{{- if not .Values.haproxy.enabled }}
+{{- fail "backup.enabled requires haproxy.enabled so the backup always targets the current Redis master" }}
+{{- end }}
+{{- if .Values.haproxy.tls.enabled }}
+{{- fail "backup.enabled does not support haproxy.tls.enabled; configure a non-TLS HAProxy endpoint or add backup TLS support first" }}
+{{- end }}
+{{- if and .Values.backup.timeZone (not (semverCompare ">=1.27-0" .Capabilities.KubeVersion.Version)) }}
+{{- fail "backup.timeZone requires Kubernetes 1.27 or later" }}
+{{- end }}
+{{- $labels := dict "app" (include "redis-ha.name" .) "heritage" .Release.Service "release" .Release.Name "chart" (include "chartref" .) "app.kubernetes.io/component" "redis-backup" "app.kubernetes.io/instance" .Release.Name }}
+{{- $labels = mustMergeOverwrite $labels .Values.extraLabels }}
+{{- $labels = mustMergeOverwrite $labels .Values.backup.labels }}
+{{- $jobLabels := mustMergeOverwrite (dict) .Values.extraLabels (dict "app.kubernetes.io/component" "redis-backup" "app.kubernetes.io/instance" .Release.Name) }}
+{{- $podLabels := mustMergeOverwrite (dict) .Values.extraLabels (dict "app" (printf "%s-backup" (include "redis-ha.name" .)) "heritage" .Release.Service "release" .Release.Name "chart" (include "chartref" .) "component" "redis-backup" "app.kubernetes.io/component" "redis-backup" "app.kubernetes.io/instance" .Release.Name) }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "redis-ha.backupName" . }}
+  namespace: {{ .Release.Namespace | quote }}
+  labels:
+{{ toYaml $labels | indent 4 }}
+  {{- with .Values.backup.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+  {{- end }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  {{- with .Values.backup.timeZone }}
+  timeZone: {{ . | quote }}
+  {{- end }}
+  concurrencyPolicy: {{ .Values.backup.concurrencyPolicy }}
+  successfulJobsHistoryLimit: {{ .Values.backup.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.backup.failedJobsHistoryLimit }}
+  startingDeadlineSeconds: {{ .Values.backup.startingDeadlineSeconds }}
+  suspend: {{ .Values.backup.suspend }}
+  jobTemplate:
+    metadata:
+      labels:
+{{ toYaml $jobLabels | indent 8 }}
+    spec:
+      backoffLimit: {{ .Values.backup.backoffLimit }}
+      activeDeadlineSeconds: {{ .Values.backup.activeDeadlineSeconds }}
+      template:
+        metadata:
+          labels:
+{{ toYaml $podLabels | indent 12 }}
+          {{- with .Values.backup.podAnnotations }}
+          annotations:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+        spec:
+          automountServiceAccountToken: false
+          serviceAccountName: {{ include "redis-ha.serviceAccountName" . }}
+          restartPolicy: Never
+          {{- with .Values.backup.imagePullSecrets }}
+          imagePullSecrets:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+          securityContext:
+{{ include "compatibility.renderSecurityContext" (dict "secContext" .Values.backup.podSecurityContext "context" $) | indent 12 }}
+          containers:
+            - name: redis-backup
+              image: "{{ required "backup.image.repository is required" .Values.backup.image.repository }}:{{ required "backup.image.tag must be an immutable versioned tag" .Values.backup.image.tag }}"
+              imagePullPolicy: {{ .Values.backup.image.pullPolicy }}
+              terminationMessagePolicy: FallbackToLogsOnError
+              securityContext:
+{{ include "compatibility.renderSecurityContext" (dict "secContext" .Values.backup.containerSecurityContext "context" $) | indent 16 }}
+              env:
+                - name: REDIS_HOST
+                  value: {{ tpl .Values.backup.redis.host . | quote }}
+                - name: REDIS_PORT
+                  value: {{ default .Values.haproxy.servicePort .Values.backup.redis.port | quote }}
+                - name: S3_ENDPOINT
+                  value: {{ tpl (required "backup.s3.endpoint is required" .Values.backup.s3.endpoint) . | quote }}
+                - name: S3_BUCKET
+                  value: {{ required "backup.s3.bucket is required" .Values.backup.s3.bucket | quote }}
+                - name: S3_PREFIX
+                  value: {{ tpl .Values.backup.s3.prefix . | quote }}
+                - name: AWS_DEFAULT_REGION
+                  value: {{ .Values.backup.s3.region | quote }}
+                - name: RETENTION_DAYS
+                  value: {{ .Values.backup.retentionDays | quote }}
+                - name: COMMAND_TIMEOUT_SECONDS
+                  value: {{ .Values.backup.commandTimeoutSeconds | quote }}
+                - name: AWS_ACCESS_KEY_ID
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ tpl (required "backup.s3.existingSecret is required" .Values.backup.s3.existingSecret) . | quote }}
+                      key: {{ .Values.backup.s3.accessKeyIdKey | quote }}
+                - name: AWS_SECRET_ACCESS_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ tpl .Values.backup.s3.existingSecret . | quote }}
+                      key: {{ .Values.backup.s3.secretAccessKeyKey | quote }}
+                {{- if .Values.auth }}
+                - name: REDIS_PASSWORD_FILE
+                  value: /redis-auth/{{ .Values.authKey }}
+                {{- end }}
+              resources:
+{{ toYaml .Values.backup.resources | indent 16 }}
+              volumeMounts:
+                - name: backup-tmp
+                  mountPath: /tmp
+              {{- if .Values.auth }}
+                - name: redis-auth
+                  mountPath: /redis-auth
+                  readOnly: true
+              {{- end }}
+          volumes:
+            - name: backup-tmp
+              emptyDir:
+{{ toYaml .Values.backup.tmpVolume | indent 16 }}
+          {{- if .Values.auth }}
+            - name: redis-auth
+              secret:
+                secretName: {{ default (include "redis-ha.fullname" .) (tpl (.Values.existingSecret | default "") .) | quote }}
+          {{- end }}
+          {{- with .Values.backup.nodeSelector }}
+          nodeSelector:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+          {{- with .Values.backup.affinity }}
+          affinity:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+          {{- with .Values.backup.tolerations }}
+          tolerations:
+{{ toYaml . | indent 12 }}
+          {{- end }}
+{{- end }}

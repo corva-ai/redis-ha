@@ -1,0 +1,29 @@
+haproxy:
+  enabled: true
+  servicePort: 6381
+
+auth: true
+redisPassword: ci-test-redis-password-do-not-use-in-production
+
+extraLabels:
+  ownership: platform
+
+backup:
+  enabled: true
+  schedule: "17 3 * * *"
+  retentionDays: 7
+  image:
+    repository: example.invalid/redis-ha-backup
+    tag: test
+  s3:
+    endpoint: http://garage-storage:3900
+    bucket: corva-redis-ha-backups
+    prefix: contract/{{ .Release.Namespace }}/{{ .Release.Name }}
+    existingSecret: redis-ha-backup-s3
+  prometheusRule:
+    # Keep this disabled because chart-testing installs every ci/*-values.yaml
+    # into a bare kind cluster, which has no PrometheusRule CRD. The backup
+    # contract test enables and validates the rendered rule separately.
+    enabled: false
+    additionalLabels:
+      release: kube-prometheus-stack

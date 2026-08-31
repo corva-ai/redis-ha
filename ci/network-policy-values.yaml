@@ -12,6 +12,7 @@ networkPolicy:
 
 haproxy:
   enabled: true
+  containerPort: 6382
   networkPolicy:
     enabled: true
     ingressRules:

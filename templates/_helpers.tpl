@@ -8,6 +8,16 @@ We truncate at 63 chars because some Kubernetes name fields are limited to this 
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{/* Name of the Redis backup CronJob. */}}
+{{- define "redis-ha.backupName" -}}
+{{- $fullname := include "redis-ha.fullname" . -}}
+{{- if gt (len $fullname) 45 -}}
+{{- printf "%s-%s-backup" ($fullname | trunc 36 | trimSuffix "-") ($fullname | sha256sum | trunc 8) -}}
+{{- else -}}
+{{- printf "%s-backup" $fullname -}}
+{{- end -}}
+{{- end -}}
+
 {{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
