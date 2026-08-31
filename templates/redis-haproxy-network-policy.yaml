@@ -62,7 +62,8 @@ spec:
               app: {{ template "redis-ha.name" . }}-backup
               component: redis-backup
       ports:
-      {{- include "redis-ports" . | nindent 8 }}
+        - port: {{ .Values.haproxy.containerPort }}
+          protocol: TCP
     {{- end }}
     {{-  range $rule := .Values.haproxy.networkPolicy.ingressRules }}
     - from:

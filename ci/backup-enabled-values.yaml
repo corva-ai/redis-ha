@@ -19,6 +19,9 @@ backup:
     prefix: contract/{{ .Release.Namespace }}/{{ .Release.Name }}
     existingSecret: redis-ha-backup-s3
   prometheusRule:
-    enabled: true
+    # Keep this disabled because chart-testing installs every ci/*-values.yaml
+    # into a bare kind cluster, which has no PrometheusRule CRD. The backup
+    # contract test enables and validates the rendered rule separately.
+    enabled: false
     additionalLabels:
       release: kube-prometheus-stack

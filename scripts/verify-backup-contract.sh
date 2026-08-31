@@ -13,7 +13,7 @@ work_dir=$(mktemp -d)
 trap 'rm -rf "$work_dir"' EXIT
 
 helm template contract . --namespace contract-ns > "$work_dir/default.yaml"
-helm template contract . --namespace contract-ns -f "$scenario" > "$work_dir/enabled.yaml"
+helm template contract . --namespace contract-ns -f "$scenario" --set backup.prometheusRule.enabled=true > "$work_dir/enabled.yaml"
 helm template contract . --namespace contract-ns -f "$scenario" -f ci/network-policy-values.yaml > "$work_dir/network-policy.yaml"
 
 assert_count() {
@@ -75,6 +75,12 @@ fi
 haproxy_backup_ingress=$(yq eval-all '[select(.kind == "NetworkPolicy" and .metadata.name == "contract-redis-ha-haproxy-network-policy").spec.ingress[].from[]?.podSelector.matchLabels | select(.release == "contract" and .app == "redis-ha-backup" and .component == "redis-backup")] | length' "$work_dir/network-policy.yaml")
 if [[ "$haproxy_backup_ingress" != "1" ]]; then
   echo "::error::HAProxy NetworkPolicy must allow the backup pod; rendered $haproxy_backup_ingress matching ingress rule(s)"
+  exit 1
+fi
+
+haproxy_backup_port=$(yq eval -r 'select(.kind == "NetworkPolicy" and .metadata.name == "contract-redis-ha-haproxy-network-policy").spec.ingress[] | select(.from[0].podSelector.matchLabels.app == "redis-ha-backup").ports[0].port' "$work_dir/network-policy.yaml")
+if [[ "$haproxy_backup_port" != "6382" ]]; then
+  echo "::error::HAProxy NetworkPolicy must allow backup traffic on haproxy.containerPort; rendered '$haproxy_backup_port'"
   exit 1
 fi
 
