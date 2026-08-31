@@ -11,6 +11,8 @@
 {{- $labels := dict "app" (include "redis-ha.name" .) "heritage" .Release.Service "release" .Release.Name "chart" (include "chartref" .) "app.kubernetes.io/component" "redis-backup" "app.kubernetes.io/instance" .Release.Name }}
 {{- $labels = mustMergeOverwrite $labels .Values.extraLabels }}
 {{- $labels = mustMergeOverwrite $labels .Values.backup.labels }}
+{{- $jobLabels := mustMergeOverwrite (dict) .Values.extraLabels (dict "app.kubernetes.io/component" "redis-backup" "app.kubernetes.io/instance" .Release.Name) }}
+{{- $podLabels := mustMergeOverwrite (dict) .Values.extraLabels (dict "app" (printf "%s-backup" (include "redis-ha.name" .)) "heritage" .Release.Service "release" .Release.Name "chart" (include "chartref" .) "component" "redis-backup" "app.kubernetes.io/component" "redis-backup" "app.kubernetes.io/instance" .Release.Name) }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -35,21 +37,14 @@ spec:
   jobTemplate:
     metadata:
       labels:
-        app.kubernetes.io/component: redis-backup
-        app.kubernetes.io/instance: {{ .Release.Name | quote }}
+{{ toYaml $jobLabels | indent 8 }}
     spec:
       backoffLimit: {{ .Values.backup.backoffLimit }}
       activeDeadlineSeconds: {{ .Values.backup.activeDeadlineSeconds }}
       template:
         metadata:
           labels:
-            app: {{ template "redis-ha.name" . }}-backup
-            heritage: {{ .Release.Service | quote }}
-            release: {{ .Release.Name | quote }}
-            chart: {{ template "chartref" . }}
-            component: redis-backup
-            app.kubernetes.io/component: redis-backup
-            app.kubernetes.io/instance: {{ .Release.Name | quote }}
+{{ toYaml $podLabels | indent 12 }}
           {{- with .Values.backup.podAnnotations }}
           annotations:
 {{ toYaml . | indent 12 }}

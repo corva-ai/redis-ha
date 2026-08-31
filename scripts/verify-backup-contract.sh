@@ -3,10 +3,11 @@
 set -euo pipefail
 
 scenario=ci/backup-enabled-values.yaml
+timezone_scenario=testdata/backup-timezone-values.yaml
 kube_version=1.27.0
 
-if [[ ! -f "$scenario" ]]; then
-  echo "::error::$scenario is required by the Redis backup contract"
+if [[ ! -f "$scenario" || ! -f "$timezone_scenario" ]]; then
+  echo "::error::$scenario and $timezone_scenario are required by the Redis backup contract"
   exit 1
 fi
 
@@ -14,7 +15,7 @@ work_dir=$(mktemp -d)
 trap 'rm -rf "$work_dir"' EXIT
 
 helm template contract . --namespace contract-ns --kube-version "$kube_version" > "$work_dir/default.yaml"
-helm template contract . --namespace contract-ns --kube-version "$kube_version" -f "$scenario" --set backup.prometheusRule.enabled=true > "$work_dir/enabled.yaml"
+helm template contract . --namespace contract-ns --kube-version "$kube_version" -f "$scenario" -f "$timezone_scenario" --set backup.prometheusRule.enabled=true > "$work_dir/enabled.yaml"
 helm template contract . --namespace contract-ns --kube-version "$kube_version" -f "$scenario" -f ci/network-policy-values.yaml > "$work_dir/network-policy.yaml"
 
 assert_count() {
@@ -58,6 +59,8 @@ assert_value() {
 assert_value '.spec.schedule' '17 3 * * *' 'backup.schedule propagation'
 assert_value '.spec.timeZone' 'UTC' 'backup.timeZone propagation'
 assert_value '.metadata.labels.ownership' 'platform' 'extraLabels propagation to backup CronJob'
+assert_value '.spec.jobTemplate.metadata.labels.ownership' 'platform' 'extraLabels propagation to backup Job'
+assert_value '.spec.jobTemplate.spec.template.metadata.labels.ownership' 'platform' 'extraLabels propagation to backup Pod'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "REDIS_PORT").value' '6381' 'derived backup.redis.port propagation'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "RETENTION_DAYS").value' '7' 'backup.retentionDays propagation'
 assert_value '.spec.jobTemplate.spec.template.spec.containers[0].env[] | select(.name == "S3_ENDPOINT").value' 'http://garage-storage:3900' 'backup.s3.endpoint propagation'
@@ -111,7 +114,7 @@ if helm template contract . --namespace contract-ns -f "$scenario" -f ci/backup-
   exit 1
 fi
 
-if helm template contract . --namespace contract-ns --kube-version 1.26.0 -f "$scenario" > "$work_dir/timezone.yaml" 2>&1; then
+if helm template contract . --namespace contract-ns --kube-version 1.26.0 -f "$scenario" -f "$timezone_scenario" > "$work_dir/timezone.yaml" 2>&1; then
   echo "::error::backup.timeZone must fail for Kubernetes versions before 1.27"
   exit 1
 fi
