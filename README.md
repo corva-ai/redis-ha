@@ -28,6 +28,7 @@ This chart bootstraps a [Redis](https://redis.io) highly available master/slave 
 * Kubernetes 1.25+ (enforced via `Chart.yaml: kubeVersion`; `policy/v1beta1` PodDisruptionBudget was removed in 1.25)
 * PV provisioner support in the underlying infrastructure
 * Helm v3+
+* Before enabling `backup.enabled`, provision `backup.s3.bucket` in the configured S3-compatible store and create `backup.s3.existingSecret` with credentials authorized to access that bucket.
 
 ## Upgrading the Chart
 
