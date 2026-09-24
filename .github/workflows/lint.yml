@@ -16,7 +16,7 @@ jobs:
 
       - uses: azure/setup-helm@v4
         with:
-          version: v3.16.3
+          version: v4.3.0
 
       - name: Verify backup chart contract
         run: ./scripts/verify-backup-contract.sh
@@ -30,7 +30,7 @@ jobs:
 
       - uses: azure/setup-helm@v4
         with:
-          version: v3.16.3
+          version: v4.3.0
 
       - uses: actions/setup-python@v5
         with:
