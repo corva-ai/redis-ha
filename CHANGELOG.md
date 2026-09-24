@@ -8,6 +8,14 @@ Releases prior to the introduction of this changelog (chart versions ≤ `4.35.1
 
 ## Historical breaking changes (inherited from upstream)
 
+## [5.3.0](https://github.com/corva-ai/redis-ha/compare/5.2.0...5.3.0) (2026-09-24)
+
+
+### Features
+
+* add configurable Redis HA backups [CINF-4652] ([#11](https://github.com/corva-ai/redis-ha/issues/11)) ([1506eb8](https://github.com/corva-ai/redis-ha/commit/1506eb8fe800143076aea7235b9309c6d34a64a2))
+* **renovate:** opt this fork in to Renovate processing ([#13](https://github.com/corva-ai/redis-ha/issues/13)) ([96eb779](https://github.com/corva-ai/redis-ha/commit/96eb779fd16b089baa37db10f66510c08e07a0fd))
+
 ## [5.2.0](https://github.com/corva-ai/redis-ha/compare/5.1.0...5.2.0) (2026-06-08)
 
 
