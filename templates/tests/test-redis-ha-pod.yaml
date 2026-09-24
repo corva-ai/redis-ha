@@ -22,7 +22,7 @@ spec:
     command:
       - sh
       - -c
-      - redis-cli -h {{ template "redis-ha.fullname" . }}-haproxy -p {{ .Values.redis.port }} info server
+      - redis-cli -h {{ template "redis-ha.fullname" . }}-haproxy -p {{ .Values.haproxy.servicePort }} info server
     resources: {{ toYaml .Values.haproxy.tests.resources | nindent 6 }}
     securityContext: {{- include "compatibility.renderSecurityContext" (dict "secContext" .Values.containerSecurityContext "context" $) | nindent 6 }}
   {{- if .Values.imagePullSecrets }}
