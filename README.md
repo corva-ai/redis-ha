@@ -139,7 +139,7 @@ The following table lists the configurable parameters of the Redis chart and the
 | `hostPath.path` | Use this path on the host for data storage. path is evaluated as template so placeholders are replaced | string | `""` |
 | `image.pullPolicy` | Redis image pull policy | string | `"IfNotPresent"` |
 | `image.repository` | Redis image repository | string | `"public.ecr.aws/docker/library/redis"` |
-| `image.tag` | Redis image tag | string | `"8.6.3-alpine"` |
+| `image.tag` | Redis image tag | string | `"8.10.3-alpine"` |
 | `imagePullSecrets` | Reference to one or more secrets to be used when pulling redis images | list | `[]` |
 | `init.resources` | Extra init resources | object | `{}` |
 | `labels` | Custom labels for the redis pod | object | `{}` |
@@ -324,7 +324,7 @@ The following table lists the configurable parameters of the Redis chart and the
 | `haproxy.hardAntiAffinity` | Whether the haproxy pods should be forced to run on separate nodes. | bool | `true` |
 | `haproxy.image.pullPolicy` | HAProxy Image PullPolicy | string | `"IfNotPresent"` |
 | `haproxy.image.repository` | HAProxy Image Repository | string | `"public.ecr.aws/docker/library/haproxy"` |
-| `haproxy.image.tag` | HAProxy Image Tag | string | `"3.3.10-alpine"` |
+| `haproxy.image.tag` | HAProxy Image Tag | string | `"3.4.7-alpine"` |
 | `haproxy.imagePullSecrets` | Reference to one or more secrets to be used when pulling images ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ | list | `[]` |
 | `haproxy.init.image` | Override the init container image entirely. Takes precedence over useRedisImage. | object | `{}` |
 | `haproxy.init.resources` | Extra init resources | object | `{}` |
@@ -418,7 +418,7 @@ The following table lists the configurable parameters of the Redis chart and the
 | `exporter.serviceMonitor.relabelings` |  | list | `[]` |
 | `exporter.serviceMonitor.telemetryPath` | Set path to redis-exporter telemtery-path (default is /metrics) | string | `""` |
 | `exporter.serviceMonitor.timeout` | Set timeout for scrape (default is 10s) | string | `""` |
-| `exporter.tag` | Exporter image tag | string | `"v1.83.0-alpine"` |
+| `exporter.tag` | Exporter image tag | string | `"v1.96.0-alpine"` |
 | `prometheusRule.additionalLabels` | Additional labels to be set in metadata. | object | `{}` |
 | `prometheusRule.enabled` | If true, creates a Prometheus Operator PrometheusRule. | bool | `false` |
 | `prometheusRule.interval` | How often rules in the group are evaluated (falls back to `global.evaluation_interval` if not set). | string | `"10s"` |
@@ -538,6 +538,8 @@ The proposed solution is currently implemented as a sidecar container that runs 
 3. If the current pod is not the master, it ensures the local Redis server is replicating from the correct master node.
 4. If any of these checks fail, the sidecar will retry the check at intervals defined by splitBrainDetection.retryInterval.
 5. If the checks continue to fail after the retry attempts, the sidecar triggers a reinitialization: it regenerates the Redis configuration and instructs the Redis server to shut down. Kubernetes will then automatically restart the container.
+6. If the current pod was promoted to master while the sidecar was waiting (step 4), the reinitialization is skipped. Previously this raced with a normal Sentinel failover and shut down the freshly promoted master, causing a second, unnecessary failover (upstream issue [DandyDeveloper/charts#383](https://github.com/DandyDeveloper/charts/issues/383)).
+7. If Sentinel reports no master at all (quorum broken or Sentinels disagree), the sidecar logs a warning on every check. After 5 consecutive misses (`MAX_QUORUM_FAILURES`, overridable through the sidecar environment) it issues `SENTINEL RESET <master-group>` against the Sentinel service so the Sentinels rediscover the topology, then resets the counter (upstream issue [DandyDeveloper/charts#398](https://github.com/DandyDeveloper/charts/issues/398)).
 
 ## Change log
 
