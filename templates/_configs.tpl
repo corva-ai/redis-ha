@@ -541,6 +541,32 @@
     set -e
     }
 
+    # sentinel_get_master (lib.sh) pipes the reply through an address regex, so a
+    # NOAUTH/TLS/connection error, a nil reply (Sentinel does not know the master
+    # group) and a reply from a different pod behind the headless service all
+    # collapse into the same empty MASTER. Ask the Sentinel in this pod directly
+    # and log the raw reply so an operator can tell those cases apart.
+    diagnose_local_sentinel() {
+    set +e
+        if [ "$SENTINEL_PORT" -eq 0 ]; then
+            reply=$(redis-cli -h localhost -p "${SENTINEL_TLS_PORT}" {{ if .Values.sentinel.auth }} -a "${SENTINELAUTH}" --no-auth-warning{{ end }} --tls --cacert /tls-certs/{{ .Values.tls.caCertFile }} {{ if ne (default "yes" .Values.sentinel.authClients) "no"}} --cert /tls-certs/{{ .Values.tls.certFile }} --key /tls-certs/{{ .Values.tls.keyFile }}{{ end }} sentinel get-master-addr-by-name "${MASTER_GROUP}" 2>&1 | tr '\n' ' ')
+        else
+            reply=$(redis-cli -h localhost -p "${SENTINEL_PORT}" {{ if .Values.sentinel.auth }} -a "${SENTINELAUTH}" --no-auth-warning{{ end }} sentinel get-master-addr-by-name "${MASTER_GROUP}" 2>&1 | tr '\n' ' ')
+        fi
+    set -e
+        # redis-cli prints a nil reply as nothing (raw mode) or "(nil)"/"(empty array)"
+        # (tty mode), and error replies as the bare message in raw mode, so classify
+        # by shape: "<host> <port>" is a master, empty/nil is unknown, anything else
+        # is an error.
+        if [ -z "$reply" ] || printf '%s' "$reply" | grep -Eq '^\((nil|empty)'; then
+            echo "  local Sentinel does not know master group ${MASTER_GROUP} (nil reply); its sentinel.conf is missing the monitor entry"
+        elif printf '%s' "$reply" | grep -Eq '^[A-Za-z0-9.:_-]+ [0-9]+ ?$'; then
+            echo "  local Sentinel reports master ${reply}; the empty answer came from another Sentinel behind ${SERVICE}"
+        else
+            echo "  local Sentinel error: ${reply}"
+        fi
+    }
+
     identify_announce_ip
 
     while [ -z "${ANNOUNCE_IP}" ]; do
@@ -548,6 +574,8 @@
         sleep 30
         identify_announce_ip
     done
+
+    QUORUM_FAIL_COUNT=0
 
     trap "exit 0" TERM
     while true; do
@@ -557,6 +585,7 @@
         identify_master
 
         if [ "$MASTER" = "$ANNOUNCE_IP" ]; then
+            QUORUM_FAIL_COUNT=0
             redis_role
             if [ "$ROLE" != "master" ]; then
                 echo "waiting for redis to become master"
@@ -570,18 +599,36 @@
                 fi
             fi
         elif [ "${MASTER}" ]; then
+            QUORUM_FAIL_COUNT=0
             identify_redis_master
             if [ "$REDIS_MASTER" != "$MASTER" ]; then
                 echo "Redis master and local master are not the same. waiting."
                 sleep {{ .Values.splitBrainDetection.retryInterval }}
                 identify_master
-                identify_redis_master
-                echo "Redis master is ${MASTER}, expected master is ${REDIS_MASTER}. No need to reinitialize."
-                if [ "${REDIS_MASTER}" != "${MASTER}" ]; then
-                    echo "Redis master is ${MASTER}, expected master is ${REDIS_MASTER}, reinitializing"
-                    reinit
+                # This pod may have been promoted during the wait. A master has no
+                # master_host, so comparing it against itself would trigger a bogus
+                # reinit (and a second failover). Skip the check in that case.
+                if [ "$MASTER" = "$ANNOUNCE_IP" ]; then
+                    echo "This pod became master during wait, skipping reinit"
+                else
+                    identify_redis_master
+                    echo "Redis master is ${MASTER}, expected master is ${REDIS_MASTER}. No need to reinitialize."
+                    if [ "${REDIS_MASTER}" != "${MASTER}" ]; then
+                        echo "Redis master is ${MASTER}, expected master is ${REDIS_MASTER}, reinitializing"
+                        reinit
+                    fi
                 fi
             fi
+        else
+            # No usable master address from Sentinel. Do not SENTINEL RESET here:
+            # a nil reply means the contacted Sentinel does not know the master
+            # group, so a reset matches nothing, and because SERVICE is headless
+            # a second redis-cli call may land on a different, healthy Sentinel
+            # and wipe its replica/peer state instead. Log loudly and leave the
+            # topology alone.
+            QUORUM_FAIL_COUNT=$((QUORUM_FAIL_COUNT + 1))
+            echo "WARNING: Sentinel service ${SERVICE} returned no master for ${MASTER_GROUP} (consecutive: ${QUORUM_FAIL_COUNT}). Manual intervention may be required."
+            diagnose_local_sentinel
         fi
     done
 
