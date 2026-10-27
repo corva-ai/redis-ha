@@ -8,6 +8,18 @@ Releases prior to the introduction of this changelog (chart versions ≤ `4.35.1
 
 ## Historical breaking changes (inherited from upstream)
 
+## [5.4.0](https://github.com/corva-ai/redis-ha/compare/5.3.0...5.4.0) (2026-10-27)
+
+
+### Features
+
+* **haproxy:** add optional Service trafficDistribution [INC-17905] ([#29](https://github.com/corva-ai/redis-ha/issues/29)) ([1c38e07](https://github.com/corva-ai/redis-ha/commit/1c38e07059d3751cd6de95e4cb31949a9374b7af))
+
+
+### Bug Fixes
+
+* **sentinel:** fix split-brain sidecar race and silent quorum failure ([#31](https://github.com/corva-ai/redis-ha/issues/31)) ([5201635](https://github.com/corva-ai/redis-ha/commit/52016358a5e2332bceb7da776f4ebab141e29c70))
+
 ## [5.3.0](https://github.com/corva-ai/redis-ha/compare/5.2.0...5.3.0) (2026-09-24)
 
 
