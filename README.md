@@ -364,6 +364,7 @@ The following table lists the configurable parameters of the Redis chart and the
 | `haproxy.service.loadBalancerIP` | HAProxy service loadbalancer IP | string | `nil` |
 | `haproxy.service.loadBalancerSourceRanges` | List of CIDR's allowed to connect to LoadBalancer | list | `[]` |
 | `haproxy.service.nodePort` | HAProxy service nodePort value (haproxy.service.type must be NodePort) | int | `nil` |
+| `haproxy.service.trafficDistribution` | HAProxy service trafficDistribution, e.g. "PreferSameZone" (Kubernetes 1.34+) to keep client connections on HAProxy pods in their own zone. Unset spreads connections across all HAProxy pods | string | `nil` |
 | `haproxy.service.type` | HAProxy service type "ClusterIP", "LoadBalancer" or "NodePort" | string | `"ClusterIP"` |
 | `haproxy.serviceAccount.automountToken` |  | bool | `true` |
 | `haproxy.serviceAccount.create` | Specifies whether a ServiceAccount should be created | bool | `true` |

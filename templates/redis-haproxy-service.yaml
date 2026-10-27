@@ -28,6 +28,9 @@ spec:
   {{- if and (eq .Values.haproxy.service.type "LoadBalancer") .Values.haproxy.service.loadBalancerSourceRanges }}
   loadBalancerSourceRanges: {{ toYaml .Values.haproxy.service.loadBalancerSourceRanges | nindent 2 }}
   {{- end }}
+  {{- with .Values.haproxy.service.trafficDistribution }}
+  trafficDistribution: {{ . }}
+  {{- end }}
   {{- if .Values.haproxy.service.externalIPs }}
   externalIPs:
     {{- range $key, $value := .Values.haproxy.service.externalIPs }}
