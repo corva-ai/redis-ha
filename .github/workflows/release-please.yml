@@ -3,16 +3,53 @@ name: release-please
 on:
   push:
     branches: [main]
+  # Re-run after the release workflow has pushed the tag for a just-merged
+  # release PR, so the tag-wait guard below never leaves a release unprocessed.
+  workflow_run:
+    workflows: [release]
+    types: [completed]
 
 permissions:
   contents: write
   pull-requests: write
 
+# Never let two runs race each other into duplicate release PRs.
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
+
+      # release-please locates the previous release by the tag named in the
+      # manifest. That tag is pushed by release.yml (chart-releaser), which the
+      # same push to main triggers in parallel. If release-please looks before
+      # the tag lands it finds no release, scans the whole history and resurrects
+      # the ancient `Release-As: 5.0.0` footer (see #33). Wait for the tag first.
+      - name: Wait for the manifest version's tag
+        id: tag
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          version=$(jq -r '."."' .github/.release-please-manifest.json)
+          for attempt in $(seq 1 20); do
+            if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${version}" >/dev/null 2>&1; then
+              echo "tag ${version} exists"
+              echo "ready=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "tag ${version} not pushed yet (attempt ${attempt}/20); waiting for the release workflow"
+            sleep 15
+          done
+          echo "::warning::Tag ${version} still missing after 5 minutes. Skipping release-please so it does not scan the full history; the release workflow re-triggers this workflow when it completes."
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+
       - uses: googleapis/release-please-action@v5
+        if: steps.tag.outputs.ready == 'true'
         with:
           config-file: .github/release-please-config.json
           manifest-file: .github/.release-please-manifest.json
