@@ -1,11 +1,16 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "forkProcessing": "enabled",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended"
+  ],
   "customManagers": [
     {
       "customType": "regex",
-      "managerFilePatterns": ["/^Chart\\.yaml$/", "/^values\\.yaml$/"],
+      "managerFilePatterns": [
+        "/^Chart\\.yaml$/",
+        "/^values\\.yaml$/"
+      ],
       "matchStrings": [
         "(?:appVersion|tag):\\s+\"?(?<currentValue>[\\w.\\-]+)\"?\\s*#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)"
       ],
@@ -14,18 +19,39 @@
   ],
   "packageRules": [
     {
-      "matchDepNames": ["library/redis"],
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "description": "Regenerate the helm-docs README tables after image-tag bumps so the lint.yml drift check passes on Renovate PRs.",
+      "postUpgradeTasks": {
+        "commands": [
+          "./scripts/renovate-post-upgrade.sh"
+        ],
+        "fileFilters": [
+          "README.md"
+        ],
+        "executionMode": "branch"
+      }
+    },
+    {
+      "matchDepNames": [
+        "library/redis"
+      ],
       "groupName": "redis",
       "commitMessageTopic": "Redis",
       "description": "Bump Chart.yaml appVersion and values.yaml image.tag together; the CI lint job enforces they agree."
     },
     {
-      "matchDepNames": ["library/haproxy"],
+      "matchDepNames": [
+        "library/haproxy"
+      ],
       "groupName": "haproxy",
       "commitMessageTopic": "HAProxy"
     },
     {
-      "matchDepNames": ["quay.io/oliver006/redis_exporter"],
+      "matchDepNames": [
+        "quay.io/oliver006/redis_exporter"
+      ],
       "groupName": "redis-exporter",
       "commitMessageTopic": "redis-exporter"
     }
