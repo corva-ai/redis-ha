@@ -36,7 +36,7 @@ jobs:
           helm package . --destination .cr-release-packages
 
       - name: Install chart-releaser
-        uses: helm/chart-releaser-action@v1.7.0
+        uses: helm/chart-releaser-action@v1.9.0
         with:
           install_only: true
 
