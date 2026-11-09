@@ -766,7 +766,7 @@ exporter:
   # -- Exporter image
   image: quay.io/oliver006/redis_exporter
   # -- Exporter image tag
-  tag: v1.96.0-alpine # renovate: datasource=docker depName=quay.io/oliver006/redis_exporter
+  tag: v1.97.0-alpine # renovate: datasource=docker depName=quay.io/oliver006/redis_exporter
   # -- Exporter image pullPolicy
   pullPolicy: IfNotPresent
 
