@@ -324,7 +324,7 @@ The following table lists the configurable parameters of the Redis chart and the
 | `haproxy.hardAntiAffinity` | Whether the haproxy pods should be forced to run on separate nodes. | bool | `true` |
 | `haproxy.image.pullPolicy` | HAProxy Image PullPolicy | string | `"IfNotPresent"` |
 | `haproxy.image.repository` | HAProxy Image Repository | string | `"public.ecr.aws/docker/library/haproxy"` |
-| `haproxy.image.tag` | HAProxy Image Tag | string | `"3.4.7-alpine"` |
+| `haproxy.image.tag` | HAProxy Image Tag | string | `"3.4.8-alpine"` |
 | `haproxy.imagePullSecrets` | Reference to one or more secrets to be used when pulling images ref: https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/ | list | `[]` |
 | `haproxy.init.image` | Override the init container image entirely. Takes precedence over useRedisImage. | object | `{}` |
 | `haproxy.init.resources` | Extra init resources | object | `{}` |
