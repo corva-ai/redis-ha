@@ -139,7 +139,7 @@ The following table lists the configurable parameters of the Redis chart and the
 | `hostPath.path` | Use this path on the host for data storage. path is evaluated as template so placeholders are replaced | string | `""` |
 | `image.pullPolicy` | Redis image pull policy | string | `"IfNotPresent"` |
 | `image.repository` | Redis image repository | string | `"public.ecr.aws/docker/library/redis"` |
-| `image.tag` | Redis image tag | string | `"8.10.3-alpine"` |
+| `image.tag` | Redis image tag | string | `"8.12.0-alpine"` |
 | `imagePullSecrets` | Reference to one or more secrets to be used when pulling redis images | list | `[]` |
 | `init.resources` | Extra init resources | object | `{}` |
 | `labels` | Custom labels for the redis pod | object | `{}` |
